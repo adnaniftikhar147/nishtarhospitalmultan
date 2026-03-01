@@ -6,8 +6,10 @@ from werkzeug.utils import secure_filename
 from models import db, Employee, ServiceHistory, User, Department, Vacancy
 
 app_dir = os.path.dirname(os.path.abspath(__file__))
-# Let Flask auto-detect templates/static instead of forcing absolute paths that might break in Vercel's lambda env
-app = Flask(__name__)
+template_dir = os.path.join(app_dir, 'templates')
+static_dir = os.path.join(app_dir, 'static')
+
+app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
 # Configure Secret Key
 app.secret_key = os.environ.get('SECRET_KEY', 'super_secret_hrms_key_123')
@@ -91,7 +93,20 @@ except Exception as init_err:
 @app.errorhandler(Exception)
 def handle_exception(e):
     import traceback
-    return f"<h3>Application Error Occurred:</h3><p>{str(e)}</p><hr><pre>{traceback.format_exc()}</pre>", 500
+    import os
+    
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    try:
+        files = str(os.listdir(app_dir))
+    except Exception as ex:
+        files = "Could not list dir: " + str(ex)
+        
+    try:
+        tpl_files = str(os.listdir(os.path.join(app_dir, 'templates')))
+    except Exception as ex:
+        tpl_files = "Could not list templates: " + str(ex)
+        
+    return f"<h3>Application Error Occurred:</h3><p>{str(e)}</p><hr><p>App Dir: {app_dir}</p><br><p>App Dir Files: {files}</p><br><p>Template Dir Files: {tpl_files}</p><hr><pre>{traceback.format_exc()}</pre>", 500
 
 # --- Authentication Logic ---
 @app.before_request
