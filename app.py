@@ -11,11 +11,20 @@ template_dir = os.path.join(app_dir, 'templates')
 if not os.path.exists(template_dir):
     template_dir = app_dir
 
-static_dir = os.path.join(app_dir, 'static')
-if not os.path.exists(static_dir):
-    static_dir = app_dir
+# Disable Flask built-in static handler so we can use a custom robust one for Vercel
+app = Flask(__name__, template_folder=template_dir, static_folder=None)
 
-app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
+from flask import send_from_directory
+@app.route('/static/<path:filename>')
+def custom_static(filename):
+    # If the file exists directly in the flattened app_dir (Vercel behavior)
+    if os.path.exists(os.path.join(app_dir, filename)):
+        return send_from_directory(app_dir, filename)
+    # Otherwise check the standard static directory
+    standard_static = os.path.join(app_dir, 'static')
+    if os.path.exists(os.path.join(standard_static, filename)):
+        return send_from_directory(standard_static, filename)
+    return "File not found", 404
 
 # Configure Secret Key
 app.secret_key = os.environ.get('SECRET_KEY', 'super_secret_hrms_key_123')
