@@ -5,11 +5,9 @@ from datetime import datetime, date, timedelta
 from werkzeug.utils import secure_filename
 from models import db, Employee, ServiceHistory, User, Department, Vacancy
 
-app_dir = os.path.abspath(os.path.dirname(__file__))
-template_dir = os.path.join(app_dir, 'templates')
-static_dir = os.path.join(app_dir, 'static')
-
-app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
+app_dir = os.path.dirname(os.path.abspath(__file__))
+# Let Flask auto-detect templates/static instead of forcing absolute paths that might break in Vercel's lambda env
+app = Flask(__name__)
 
 # Configure Secret Key
 app.secret_key = os.environ.get('SECRET_KEY', 'super_secret_hrms_key_123')
@@ -31,7 +29,7 @@ else:
         app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(app_dir, 'hrms.db')}"
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = os.path.join(static_dir, 'uploads')
+app.config['UPLOAD_FOLDER'] = os.path.join(app_dir, 'static', 'uploads')
 
 db.init_app(app)
 
