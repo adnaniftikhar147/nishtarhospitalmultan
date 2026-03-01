@@ -6,8 +6,14 @@ from werkzeug.utils import secure_filename
 from models import db, Employee, ServiceHistory, User, Department, Vacancy
 
 app_dir = os.path.dirname(os.path.abspath(__file__))
+
 template_dir = os.path.join(app_dir, 'templates')
+if not os.path.exists(template_dir):
+    template_dir = app_dir
+
 static_dir = os.path.join(app_dir, 'static')
+if not os.path.exists(static_dir):
+    static_dir = app_dir
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
@@ -31,7 +37,12 @@ else:
         app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(app_dir, 'hrms.db')}"
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = os.path.join(app_dir, 'static', 'uploads')
+
+if os.environ.get('VERCEL'):
+    import tempfile
+    app.config['UPLOAD_FOLDER'] = os.path.join(tempfile.gettempdir(), 'uploads')
+else:
+    app.config['UPLOAD_FOLDER'] = os.path.join(app_dir, 'static', 'uploads')
 
 db.init_app(app)
 
