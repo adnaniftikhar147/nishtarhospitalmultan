@@ -22,9 +22,11 @@ if database_url:
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
-    # Setup Vercel temporary storage fallback
-    if os.environ.get('VERCEL'):
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/hrms.db'
+    # Dynamic fallback: if app directory is not writable, fallback to /tmp
+    if not os.access(app_dir, os.W_OK) or os.environ.get('VERCEL'):
+        import tempfile
+        tmp_db = os.path.join(tempfile.gettempdir(), 'hrms.db')
+        app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{tmp_db}"
     else:
         app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(app_dir, 'hrms.db')}"
 
@@ -80,9 +82,18 @@ def seed_data():
 
 
 # Create tables and seed data on startup
-with app.app_context():
-    db.create_all()
-    seed_data()
+try:
+    with app.app_context():
+        db.create_all()
+        seed_data()
+except Exception as init_err:
+    print(f"Failed to initialize database: {init_err}")
+
+# --- Error Handling to Show Vercel Errors on Screen ---
+@app.errorhandler(Exception)
+def handle_exception(e):
+    import traceback
+    return f"<h3>Application Error Occurred:</h3><p>{str(e)}</p><hr><pre>{traceback.format_exc()}</pre>", 500
 
 # --- Authentication Logic ---
 @app.before_request
