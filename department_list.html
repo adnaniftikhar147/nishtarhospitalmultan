@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}Ward / Department List{% endblock %}
+{% block breadcrumb %}Staff Management / <span class="highlight">Ward &amp; Department List</span>{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-top: 24px; padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            <h2 id="deptHeading" style="margin: 0; color: var(--text-main); font-size: 20px;">Employees by Ward /
+                Department</h2>
+            <div class="print-hide" style="display: flex; gap: 16px;">
+                <label
+                    style="display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; color: var(--text-muted); cursor: pointer;">
+                    <input type="checkbox" id="chkMobile" onchange="toggleTableColumn('col-mobile', this.checked)"
+                        style="width: 14px; height: 14px; cursor: pointer; accent-color: var(--primary);">
+                    Mobile No.
+                </label>
+                <label
+                    style="display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; color: var(--text-muted); cursor: pointer;">
+                    <input type="checkbox" id="chkCnic" onchange="toggleTableColumn('col-cnic', this.checked)"
+                        style="width: 14px; height: 14px; cursor: pointer; accent-color: var(--primary);">
+                    CNIC
+                </label>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <div class="custom-dropdown print-hide" style="position: relative;">
+                <button onclick="toggleDeptDropdown()"
+                    style="padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); font-family: inherit; font-size: 14px; min-width: 250px; outline: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--text-main);">
+                    <span id="deptDropdownLabel"
+                        style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">--
+                        Select Departments --</span>
+                    <i class='bx bx-chevron-down'></i>
+                </button>
+                <div id="deptDropdownContent"
+                    style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; max-height: 300px; overflow-y: auto; z-index: 100; padding: 8px; box-shadow: var(--shadow-md); margin-top: 4px;">
+                    <label
+                        style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; border-radius: 4px; border-bottom: 1px solid var(--border-color); margin-bottom: 4px; padding-bottom: 8px;">
+                        <input type="checkbox" id="selectAllDepts" onchange="toggleAllDepartmentsSelection(this)"
+                            style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
+                        <span style="font-size: 14px; color: var(--text-main); font-weight: bold;">Select All
+                            Departments</span>
+                    </label>
+                    {% for dept in global_departments %}
+                    <label
+                        style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; border-radius: 4px;">
+                        <input type="checkbox" value="{{ dept.name }}" class="dept-checkbox"
+                            onchange="handleDeptSelectionChange()"
+                            style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
+                        <span style="font-size: 14px; color: var(--text-main);">{{ dept.name }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            <button class="btn-primary print-hide" onclick="window.print()" style="margin-left: 10px;">
+                <i class='bx bx-printer'></i> Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Container for dynamic department tables -->
+    <div id="tablesContainer" style="display: flex; flex-direction: column; gap: 40px;">
+        <div style="text-align: center; padding: 40px; color: var(--text-muted);" class="print-hide">
+            <i class='bx bx-building' style="font-size: 48px; display: block; margin-bottom: 10px; opacity: 0.5;"></i>
+            Please select Ward / Department(s) above to view employees.
+        </div>
+    </div>
+
+    <!-- Signature Stamp Section -->
+    <div style="margin-top: 40px; display: flex; justify-content: flex-end; padding-right: 40px;">
+        <div style="display: flex; gap: 15px; align-items: flex-start;">
+            <!-- Small checkbox next to signature section -->
+            <input type="checkbox" id="showSignatureCheckbox" checked onchange="toggleSignaturePrint()"
+                class="print-hide" title="Include Signature on Print"
+                style="width: 14px; height: 14px; margin-top: 15px; cursor: pointer; accent-color: var(--primary);">
+
+            <div id="signatureSection" style="text-align: center; width: 250px; transition: opacity 0.2s;">
+                <div style="border-bottom: 2px solid #000; margin-bottom: 8px;"></div>
+                <select id="signatureSelect" onchange="handleAddSignature(this)"
+                    style="width: 100%; text-align: center; text-align-last: center; border: 1px solid var(--border); padding: 8px; border-radius: 5px; font-weight: 600; font-family: inherit; font-size: 14px; outline: none; background: var(--bg-main); cursor: pointer; margin-bottom: 5px;">
+                    <option value="Medical Superintendent">Medical Superintendent</option>
+                    <option value="Head of Department">Head of Department</option>
+                    <option value="M.S / Head of Department">M.S / Head of Department</option>
+                    <option value="HR Manager">HR Manager</option>
+                    <option value="Admin Officer">Admin Officer</option>
+                    <option value="Clerk">Clerk</option>
+                    <option value="ADD_NEW" style="font-weight: 700; color: var(--primary);">+ Add New Authority
+                    </option>
+                </select>
+                <select id="hospitalSelect" onchange="handleAddHospital(this)"
+                    style="width: 100%; text-align: center; text-align-last: center; border: 1px solid var(--border); padding: 8px; border-radius: 5px; font-weight: 600; font-family: inherit; font-size: 14px; outline: none; background: var(--bg-main); cursor: pointer;">
+                    <option value="Nishtar Hospital, Multan">Nishtar Hospital, Multan</option>
+                    <option value="ADD_NEW" style="font-weight: 700; color: var(--primary);">+ Add New Hospital/Location
+                    </option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dropdown toggle logic
+    function toggleDeptDropdown() {
+        const content = document.getElementById('deptDropdownContent');
+        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Close on outside click
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.custom-dropdown')) {
+            const content = document.getElementById('deptDropdownContent');
+            if (content) content.style.display = 'none';
+        }
+    });
+
+    let selectedDepartments = [];
+
+    function toggleAllDepartmentsSelection(masterCheckbox) {
+        const checkboxes = document.querySelectorAll('.dept-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = masterCheckbox.checked;
+        });
+        handleDeptSelectionChange();
+    }
+
+    async function handleDeptSelectionChange() {
+        const checkboxes = document.querySelectorAll('.dept-checkbox:checked');
+        const allCheckboxes = document.querySelectorAll('.dept-checkbox');
+        selectedDepartments = Array.from(checkboxes).map(cb => cb.value);
+
+        const selectAllDepts = document.getElementById('selectAllDepts');
+        if (selectAllDepts) {
+            selectAllDepts.checked = checkboxes.length > 0 && checkboxes.length === allCheckboxes.length;
+            selectAllDepts.indeterminate = checkboxes.length > 0 && checkboxes.length < allCheckboxes.length;
+        }
+
+        if (selectedDepartments.length === 0) {
+            document.getElementById('deptDropdownLabel').innerText = '-- Select Departments --';
+            document.getElementById('deptHeading').innerText = `Employees by Ward / Department`;
+            document.getElementById('tablesContainer').innerHTML = `
+                <div style="text-align: center; padding: 40px; color: var(--text-muted);" class="print-hide">
+                    <i class='bx bx-building' style="font-size: 48px; display: block; margin-bottom: 10px; opacity: 0.5;"></i>
+                    Please select Ward / Department(s) above to view employees.
+                </div>
+            `;
+            const sig = document.getElementById('signatureSection');
+            if (sig) sig.style.display = 'none';
+            return;
+        } else if (selectedDepartments.length === 1) {
+            document.getElementById('deptDropdownLabel').innerText = selectedDepartments[0];
+            document.getElementById('deptHeading').innerText = `Employees in ${selectedDepartments[0]}`;
+        } else {
+            document.getElementById('deptDropdownLabel').innerText = `${selectedDepartments.length} Departments Selected`;
+            document.getElementById('deptHeading').innerText = `Employees in Multiple Departments`;
+        }
+
+        renderAllSelectedDepartments();
+    }
+
+    async function renderAllSelectedDepartments() {
+        const container = document.getElementById('tablesContainer');
+        container.innerHTML = `<div style="text-align: center; padding: 20px;">Fetching records...</div>`;
+        document.getElementById('deptHeading').innerText = `Employees by Ward / Department`; // Fallback heading
+
+        // Hide signatures until data loads perfectly
+        document.getElementById('signatureSection').style.display = 'none';
+
+        let allHtml = '';
+
+        for (let i = 0; i < selectedDepartments.length; i++) {
+            const deptName = selectedDepartments[i];
+            try {
+                const response = await fetch(`/api/employees/department?dept=${encodeURIComponent(deptName)}`);
+                const data = await response.json();
+
+                let tbodyHtml = '';
+
+                if (data.length === 0) {
+                    tbodyHtml = `
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                <i class='bx bx-info-circle' style="font-size: 32px; display: block; margin-bottom: 10px; opacity: 0.5;"></i>
+                                No employees found in this department.
+                            </td>
+                        </tr>
+                     `;
+                } else {
+                    tbodyHtml = data.map((emp, index) => `
+                        <tr>
+                            <td class="print-hide" style="text-align: center;">
+                                <input type="checkbox" class="emp-checkbox-${i}" checked onchange="this.closest('tr').classList.toggle('exclude-from-print', !this.checked); handleSingleCheckboxChange(${i});" title="Include Employee on Print" style="width: 14px; height: 14px; cursor: pointer; accent-color: var(--primary);">
+                            </td>
+                            <td class="row-sr-no-${i}" style="text-align: center; font-weight: 600;">${index + 1}</td>
+                            <td style="text-align: center; font-weight: 600; color: var(--primary);">
+                                <a href="/employee/${emp.id}" style="text-decoration: none; color: inherit;">${emp.file_no}</a>
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div>
+                                        <span style="font-weight: 600; display: block;">${emp.name}</span>
+                                        <span style="font-size: 12px; color: var(--text-muted);">S/O ${emp.father_name}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                ${emp.designation} 
+                                <span style="font-size: 11px; color: var(--text-muted); background: var(--bg-main); padding: 2px 6px; border-radius: 4px; margin-left: 6px;">BPS-${emp.bps.toString().padStart(2, '0')}</span>
+                            </td>
+                            <td class="col-mobile" style="display: none; white-space: nowrap;">${emp.mobile_no || '-'}</td>
+                            <td class="col-cnic" style="display: none; white-space: nowrap;">${emp.cnic || '-'}</td>
+                        </tr>
+                    `).join('');
+                }
+
+                allHtml += `
+                    <div class="dept-block">
+                        <h2 style="text-align: center; margin-bottom: 16px; font-size: 18px; color: #000; text-decoration: underline;">Employees in ${deptName}</h2>
+                        <div style="overflow-x: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th class="print-hide" style="width: 40px; text-align: center;">
+                                            <input type="checkbox" id="selectAllCheckbox-${i}" checked onchange="toggleAllEmployees(this, ${i})" title="Select/Deselect All" style="width: 14px; height: 14px; cursor: pointer; accent-color: var(--primary);">
+                                        </th>
+                                        <th style="width: 70px; text-align: center;">Sr. No.</th>
+                                        <th style="width: 90px; text-align: center;">File No.</th>
+                                        <th style="width: 50%;">Employee Name &amp; Father Name</th>
+                                        <th>Designation</th>
+                                        <th class="col-mobile" style="display: none; white-space: nowrap;">Mobile No.</th>
+                                        <th class="col-cnic" style="display: none; white-space: nowrap;">CNIC</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-${i}">
+                                    ${tbodyHtml}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error("Error fetching department employees:", error);
+                allHtml += `<div style="text-align: center; color: var(--danger); padding: 20px;">Failed to load data for ${deptName}.</div>`;
+            }
+        }
+
+        container.innerHTML = allHtml;
+
+        // Re-apply column visibility after fetching all
+        toggleTableColumn('col-mobile', document.getElementById('chkMobile').checked);
+        toggleTableColumn('col-cnic', document.getElementById('chkCnic').checked);
+
+        // Show signatures wrapper again
+        document.getElementById('signatureSection').style.display = 'block';
+    }
+
+    function toggleTableColumn(colClass, isChecked) {
+        const els = document.querySelectorAll('.' + colClass);
+        els.forEach(el => {
+            el.style.display = isChecked ? 'table-cell' : 'none';
+        });
+    }
+
+    function toggleSignaturePrint() {
+        const checkbox = document.getElementById('showSignatureCheckbox');
+        const sigSection = document.getElementById('signatureSection');
+        if (checkbox.checked) {
+            sigSection.classList.remove('print-hide');
+            sigSection.style.opacity = '1';
+            sigSection.style.pointerEvents = 'auto';
+        } else {
+            sigSection.classList.add('print-hide');
+            sigSection.style.opacity = '0.4';
+            sigSection.style.pointerEvents = 'none';
+        }
+    }
+
+    function toggleAllEmployees(masterCheckbox, index) {
+        const checkboxes = document.querySelectorAll('.emp-checkbox-' + index);
+        checkboxes.forEach(cb => {
+            if (cb.checked !== masterCheckbox.checked) {
+                cb.checked = masterCheckbox.checked;
+                cb.closest('tr').classList.toggle('exclude-from-print', !cb.checked);
+            }
+        });
+        updateRowNumbers(index);
+    }
+
+    function handleSingleCheckboxChange(index) {
+        const checkboxes = document.querySelectorAll('.emp-checkbox-' + index);
+        const masterCheckbox = document.getElementById('selectAllCheckbox-' + index);
+
+        const total = checkboxes.length;
+        if (total === 0) return;
+
+        const checkedCount = document.querySelectorAll(`.emp-checkbox-${index}:checked`).length;
+
+        masterCheckbox.checked = checkedCount === total;
+        masterCheckbox.indeterminate = checkedCount > 0 && checkedCount < total;
+        updateRowNumbers(index);
+    }
+
+    function updateRowNumbers(index) {
+        let counter = 1;
+        const rows = document.querySelectorAll(`#tbody-${index} tr`);
+        rows.forEach(tr => {
+            if (!tr.classList.contains('exclude-from-print') && tr.querySelector('.row-sr-no-' + index)) {
+                tr.querySelector('.row-sr-no-' + index).innerText = counter++;
+            }
+        });
+    }
+
+    async function handleAddSignature(selectElt) {
+        if (selectElt.value === 'ADD_NEW') {
+            const { value: newAuth } = await Swal.fire({
+                title: 'Add New Authority',
+                input: 'text',
+                inputPlaceholder: 'e.g., Senior Consultant',
+                showCancelButton: true
+            });
+
+            if (newAuth && newAuth.trim()) {
+                const opt = document.createElement('option');
+                opt.value = newAuth.trim();
+                opt.text = newAuth.trim();
+                // Add right above the "Add New" option
+                selectElt.add(opt, selectElt.options[selectElt.options.length - 1]);
+                selectElt.value = newAuth.trim();
+            } else {
+                // If cancelled, reset back to first index
+                selectElt.selectedIndex = 0;
+            }
+        }
+    }
+    async function handleAddHospital(selectElt) {
+        if (selectElt.value === 'ADD_NEW') {
+            const { value: newHospital } = await Swal.fire({
+                title: 'Add New Hospital / Location',
+                input: 'text',
+                inputPlaceholder: 'e.g., DHQ Hospital, Multan',
+                showCancelButton: true
+            });
+
+            if (newHospital && newHospital.trim()) {
+                const opt = document.createElement('option');
+                opt.value = newHospital.trim();
+                opt.text = newHospital.trim();
+                // Add right above the "Add New" option
+                selectElt.add(opt, selectElt.options[selectElt.options.length - 1]);
+                selectElt.value = newHospital.trim();
+            } else {
+                // If cancelled, reset back to first index
+                selectElt.selectedIndex = 0;
+            }
+        }
+    }
+</script>
+{% endblock %}

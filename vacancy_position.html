@@ -1,0 +1,488 @@
+{% extends "base.html" %}
+
+{% block title %}Vecancy Position{% endblock %}
+{% block breadcrumb %}Staff Management / <span class="highlight">Vecancy Position</span>{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-top: 24px; padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+        <div class="print-hide" style="flex: 1;"></div>
+
+        <div
+            style="display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; flex: 2;">
+            <h2 id="deptHeading" style="margin: 0; color: var(--text-main); font-size: 22px;">Vecancy Position</h2>
+
+            <select id="subHeadingSelect" onchange="handleAddHeading(this)"
+                style="margin: 0; color: var(--text-muted); font-size: 16px; font-weight: 600; border: none; border-bottom: 1px dashed var(--border); outline: none; background: transparent; cursor: pointer; text-align: center; text-align-last: center; padding-bottom: 2px;">
+                <option value="VECANCY POSITION OF NON-GAZATTED STAFF IN NISHTAR HOSPITAL, MULTAN">VECANCY POSITION OF
+                    NON-GAZATTED STAFF IN NISHTAR HOSPITAL, MULTAN</option>
+                <option value="ADD_NEW" style="font-weight: 700; color: var(--primary);">+ Add New Heading</option>
+            </select>
+        </div>
+
+        <div style="display: flex; gap: 12px; align-items: center; flex: 1; justify-content: flex-end;">
+            <div class="custom-dropdown print-hide" style="position: relative;">
+                <button onclick="toggleDesigDropdown()"
+                    style="padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); font-family: inherit; font-size: 14px; min-width: 250px; outline: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--text-main);">
+                    <span id="desigDropdownLabel"
+                        style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">All
+                        Designations</span>
+                    <i class='bx bx-chevron-down'></i>
+                </button>
+                <div id="desigDropdownContent"
+                    style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; max-height: 300px; overflow-y: auto; z-index: 100; padding: 8px; box-shadow: var(--shadow-md); margin-top: 4px;">
+                    <label
+                        style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; border-radius: 4px; border-bottom: 1px solid var(--border-color); margin-bottom: 4px; padding-bottom: 8px;">
+                        <input type="checkbox" id="selectAllDesigs" onchange="toggleAllDesignations(this)"
+                            style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;" checked>
+                        <span style="font-size: 14px; color: var(--text-main); font-weight: bold;">Select All
+                            Designations</span>
+                    </label>
+                    {% for desig in unique_designations %}
+                    <label
+                        style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; border-radius: 4px;">
+                        <input type="checkbox" value="{{ desig }}" class="desig-checkbox"
+                            onchange="handleDesigSelectionChange()" checked
+                            style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
+                        <span style="font-size: 14px; color: var(--text-main);">{{ desig }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            <button class="btn-primary print-hide" onclick="window.print()" style="margin-left: 10px;">
+                <i class='bx bx-printer'></i> Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Container for dynamic table -->
+    <style>
+        @media print {
+            #vacancyTable {
+                table-layout: fixed !important;
+                width: 100% !important;
+            }
+
+            #vacancyTable th:nth-child(1),
+            #vacancyTable td:nth-child(1) {
+                width: 80px !important;
+            }
+
+            #vacancyTable td:nth-child(2) {
+                width: auto !important;
+                text-align: center !important;
+            }
+
+            #vacancyTable th:nth-child(2) {
+                width: auto !important;
+                text-align: center !important;
+            }
+
+            #vacancyTable th:nth-child(3),
+            #vacancyTable td:nth-child(3) {
+                width: 80px !important;
+            }
+
+            #vacancyTable th:nth-child(4),
+            #vacancyTable td:nth-child(4) {
+                width: 120px !important;
+                text-align: center !important;
+            }
+
+            #vacancyTable th:nth-child(5),
+            #vacancyTable td:nth-child(5) {
+                width: 100px !important;
+                text-align: center !important;
+            }
+
+            #vacancyTable th:nth-child(6),
+            #vacancyTable td:nth-child(6) {
+                width: 100px !important;
+                text-align: center !important;
+            }
+
+            #deptHeading {
+                display: none !important;
+            }
+
+            #subHeadingSelect {
+                appearance: none !important;
+                -webkit-appearance: none !important;
+                -moz-appearance: none !important;
+                text-align-last: center !important;
+                border: none !important;
+                background: transparent !important;
+                color: #000 !important;
+            }
+        }
+    </style>
+    <div id="tablesContainer" style="display: flex; flex-direction: column; gap: 40px;">
+        <div class="dept-block">
+            <div style="overflow-x: auto;">
+                <table class="data-table" id="vacancyTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px; text-align: center;">Sr. No.</th>
+                            <th style="width: auto; text-align: center;">Designation</th>
+                            <th style="width: 80px; text-align: center;">Initial BPS</th>
+                            <th style="width: 150px; text-align: center;">Sentioned Posts</th>
+                            <th style="width: 120px; text-align: center;">Filled Posts</th>
+                            <th style="width: 120px; text-align: center;">Vecant Post</th>
+                            <th class="print-hide" style="width: 80px; text-align: center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in vacancies %}
+                        <tr class="vacancy-row">
+                            <td class="row-sr-no" style="text-align: center; font-weight: 600;">{{ loop.index }}</td>
+                            <td class="row-desig" style="font-weight: 600; text-align: center;">{{ row.designation }}
+                            </td>
+                            <td style="text-align: center;">
+                                <span
+                                    style="font-size: 11px; color: var(--text-muted); background: var(--bg-main); padding: 2px 6px; border-radius: 4px;">{{
+                                    '%02d' % row.bps }}</span>
+                            </td>
+                            <td class="col-sanc" style="text-align: center !important; font-weight: 600;"
+                                id="sentioned-{{ loop.index }}">{{
+                                row.sanctioned }}</td>
+                            <td class="col-fill" style="text-align: center; color: var(--primary); font-weight: 600;">{{
+                                row.filled }}
+                            </td>
+                            <td class="col-vac"
+                                style="text-align: center; font-weight: 600; color: {% if row.vacant < 0 %}var(--danger){% elif row.vacant > 0 %}var(--success){% else %}inherit{% endif %};"
+                                id="vacant-{{ loop.index }}">
+                                {{ row.vacant }}
+                            </td>
+                            <td class="print-hide" style="text-align: center;">
+                                <button class="icon-btn"
+                                    onclick="editSanctioned('{{ row.designation }}', {{ row.bps }}, {{ row.sanctioned }}, {{ row.filled }}, {{ loop.index }})"
+                                    style="color: var(--primary);" title="Edit Sentioned Posts">
+                                    <i class='bx bx-edit-alt'></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr id="emptyDataRow" style="display: none;">
+                            <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                <i class='bx bx-info-circle'
+                                    style="font-size: 32px; display: block; margin-bottom: 10px; opacity: 0.5;"></i>
+                                No matching designations found.
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                <i class='bx bx-info-circle'
+                                    style="font-size: 32px; display: block; margin-bottom: 10px; opacity: 0.5;"></i>
+                                No data available. Add employees to populate this list.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot id="tableFooter" style="background-color: var(--primary-light);">
+                        <tr>
+                            <td colspan="3" style="text-align: right; font-weight: 700; font-size: 15px;">Grand Total:
+                            </td>
+                            <td id="totalSanctioned" style="text-align: center; font-weight: 700; font-size: 16px;">0
+                            </td>
+                            <td id="totalFilled"
+                                style="text-align: center; font-weight: 700; font-size: 16px; color: var(--primary);">0
+                            </td>
+                            <td id="totalVacant" style="text-align: center; font-weight: 700; font-size: 16px;">0</td>
+                            <td class="print-hide"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signature Stamp Section -->
+    <div style="margin-top: 40px; display: flex; justify-content: flex-end; padding-right: 40px;">
+        <div style="display: flex; gap: 15px; align-items: flex-start;">
+            <input type="checkbox" id="showSignatureCheckbox" checked onchange="toggleSignaturePrint()"
+                class="print-hide" title="Include Signature on Print"
+                style="width: 14px; height: 14px; margin-top: 15px; cursor: pointer; accent-color: var(--primary);">
+
+            <div id="signatureSection" style="text-align: center; width: 250px; transition: opacity 0.2s;">
+                <div style="border-bottom: 2px solid #000; margin-bottom: 8px;"></div>
+                <select id="signatureSelect" onchange="handleAddSignature(this)"
+                    style="width: 100%; text-align: center; text-align-last: center; border: 1px solid var(--border); padding: 8px; border-radius: 5px; font-weight: 600; font-family: inherit; font-size: 14px; outline: none; background: var(--bg-main); cursor: pointer; margin-bottom: 5px;">
+                    <option value="Medical Superintendent">Medical Superintendent</option>
+                    <option value="Head of Department">Head of Department</option>
+                    <option value="M.S / Head of Department">M.S / Head of Department</option>
+                    <option value="HR Manager">HR Manager</option>
+                    <option value="Admin Officer">Admin Officer</option>
+                    <option value="Clerk">Clerk</option>
+                    <option value="ADD_NEW" style="font-weight: 700; color: var(--primary);">+ Add New Authority
+                    </option>
+                </select>
+                <select id="hospitalSelect" onchange="handleAddHospital(this)"
+                    style="width: 100%; text-align: center; text-align-last: center; border: 1px solid var(--border); padding: 8px; border-radius: 5px; font-weight: 600; font-family: inherit; font-size: 14px; outline: none; background: var(--bg-main); cursor: pointer;">
+                    <option value="Nishtar Hospital, Multan">Nishtar Hospital, Multan</option>
+                    <option value="ADD_NEW" style="font-weight: 700; color: var(--primary);">+ Add New Hospital/Location
+                    </option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleDesigDropdown() {
+        const content = document.getElementById('desigDropdownContent');
+        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.custom-dropdown')) {
+            const content = document.getElementById('desigDropdownContent');
+            if (content) content.style.display = 'none';
+        }
+    });
+
+    function toggleAllDesignations(masterCheckbox) {
+        const checkboxes = document.querySelectorAll('.desig-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = masterCheckbox.checked;
+        });
+        handleDesigSelectionChange();
+    }
+
+    function handleDesigSelectionChange() {
+        const checkboxes = document.querySelectorAll('.desig-checkbox:checked');
+        const allCheckboxes = document.querySelectorAll('.desig-checkbox');
+        const selectedDesignations = Array.from(checkboxes).map(cb => cb.value);
+
+        const selectAllDesigs = document.getElementById('selectAllDesigs');
+        if (selectAllDesigs) {
+            selectAllDesigs.checked = checkboxes.length > 0 && checkboxes.length === allCheckboxes.length;
+            selectAllDesigs.indeterminate = checkboxes.length > 0 && checkboxes.length < allCheckboxes.length;
+        }
+
+        if (selectedDesignations.length === 0) {
+            document.getElementById('desigDropdownLabel').innerText = '-- Select Designations --';
+            document.getElementById('deptHeading').innerText = `Vecancy Position`;
+        } else if (selectedDesignations.length === 1) {
+            document.getElementById('desigDropdownLabel').innerText = selectedDesignations[0];
+            document.getElementById('deptHeading').innerText = `Vecancy Position - ${selectedDesignations[0]}`;
+        } else if (selectedDesignations.length === allCheckboxes.length) {
+            document.getElementById('desigDropdownLabel').innerText = 'All Designations';
+            document.getElementById('deptHeading').innerText = `Vecancy Position`;
+        } else {
+            document.getElementById('desigDropdownLabel').innerText = `${selectedDesignations.length} Designations Selected`;
+            document.getElementById('deptHeading').innerText = `Vecancy Position - Filtered`;
+        }
+
+        filterTableRows(selectedDesignations);
+    }
+
+    function filterTableRows(selectedDesignations) {
+        const rows = document.querySelectorAll('#vacancyTable tbody tr.vacancy-row');
+        let counter = 1;
+        let visibleCount = 0;
+        let sumSanc = 0;
+        let sumFill = 0;
+        let sumVac = 0;
+
+        rows.forEach(row => {
+            const desigCell = row.querySelector('.row-desig');
+            if (desigCell) {
+                const desig = desigCell.innerText.trim();
+                if (selectedDesignations.includes(desig)) {
+                    row.style.display = '';
+                    row.classList.remove('exclude-from-print');
+                    row.querySelector('.row-sr-no').innerText = counter++;
+                    visibleCount++;
+
+                    const sanc = parseInt(row.querySelector('.col-sanc').innerText) || 0;
+                    const fill = parseInt(row.querySelector('.col-fill').innerText) || 0;
+                    const vac = parseInt(row.querySelector('.col-vac').innerText) || 0;
+                    sumSanc += sanc;
+                    sumFill += fill;
+                    sumVac += vac;
+                } else {
+                    row.style.display = 'none';
+                    row.classList.add('exclude-from-print');
+                }
+            }
+        });
+
+        const emptyRow = document.getElementById('emptyDataRow');
+        const footer = document.getElementById('tableFooter');
+
+        if (visibleCount === 0) {
+            if (emptyRow) emptyRow.style.display = '';
+            if (footer) footer.style.display = 'none';
+        } else {
+            if (emptyRow) emptyRow.style.display = 'none';
+            if (footer) footer.style.display = '';
+
+            document.getElementById('totalSanctioned').innerText = sumSanc;
+            document.getElementById('totalFilled').innerText = sumFill;
+
+            const totalVacantEl = document.getElementById('totalVacant');
+            totalVacantEl.innerText = sumVac;
+            if (sumVac < 0) {
+                totalVacantEl.style.color = 'var(--danger)';
+            } else if (sumVac > 0) {
+                totalVacantEl.style.color = 'var(--success)';
+            } else {
+                totalVacantEl.style.color = 'inherit';
+            }
+        }
+    }
+
+    function toggleSignaturePrint() {
+        const checkbox = document.getElementById('showSignatureCheckbox');
+        const sigSection = document.getElementById('signatureSection');
+        if (checkbox.checked) {
+            sigSection.classList.remove('print-hide');
+            sigSection.style.opacity = '1';
+            sigSection.style.pointerEvents = 'auto';
+        } else {
+            sigSection.classList.add('print-hide');
+            sigSection.style.opacity = '0.4';
+            sigSection.style.pointerEvents = 'none';
+        }
+    }
+
+    async function handleAddSignature(selectElt) {
+        if (selectElt.value === 'ADD_NEW') {
+            const { value: newAuth } = await Swal.fire({
+                title: 'Add New Authority',
+                input: 'text',
+                inputPlaceholder: 'e.g., Senior Consultant',
+                showCancelButton: true
+            });
+
+            if (newAuth && newAuth.trim()) {
+                const opt = document.createElement('option');
+                opt.value = newAuth.trim();
+                opt.text = newAuth.trim();
+                selectElt.add(opt, selectElt.options[selectElt.options.length - 1]);
+                selectElt.value = newAuth.trim();
+            } else {
+                selectElt.selectedIndex = 0;
+            }
+        }
+    }
+
+    async function handleAddHeading(selectElt) {
+        if (selectElt.value === 'ADD_NEW') {
+            const { value: newHeading } = await Swal.fire({
+                title: 'Add New Heading',
+                input: 'text',
+                inputPlaceholder: 'e.g., Vacancy Position (Adhoc)',
+                showCancelButton: true
+            });
+
+            if (newHeading && newHeading.trim()) {
+                const opt = document.createElement('option');
+                opt.value = newHeading.trim();
+                opt.text = newHeading.trim();
+                selectElt.add(opt, selectElt.options[selectElt.options.length - 1]);
+                selectElt.value = newHeading.trim();
+            } else {
+                selectElt.selectedIndex = 0;
+            }
+        }
+    }
+
+    async function handleAddHospital(selectElt) {
+        if (selectElt.value === 'ADD_NEW') {
+            const { value: newHospital } = await Swal.fire({
+                title: 'Add New Hospital / Location',
+                input: 'text',
+                inputPlaceholder: 'e.g., DHQ Hospital, Multan',
+                showCancelButton: true
+            });
+
+            if (newHospital && newHospital.trim()) {
+                const opt = document.createElement('option');
+                opt.value = newHospital.trim();
+                opt.text = newHospital.trim();
+                selectElt.add(opt, selectElt.options[selectElt.options.length - 1]);
+                selectElt.value = newHospital.trim();
+            } else {
+                selectElt.selectedIndex = 0;
+            }
+        }
+    }
+
+    async function editSanctioned(designation, bps, currentSanctioned, filled, rowIndex) {
+        const { value: newSanctioned } = await Swal.fire({
+            title: 'Edit Sentioned Posts',
+            html: `Update value for <b>${designation} (BPS-${bps.toString().padStart(2, '0')})</b>`,
+            input: 'number',
+            inputValue: currentSanctioned,
+            showCancelButton: true,
+            confirmButtonText: 'Save',
+            inputValidator: (value) => {
+                if (!value || value < 0) {
+                    return 'Please enter a valid number (0 or greater)'
+                }
+            }
+        });
+
+        if (newSanctioned) {
+            try {
+                const response = await fetch('/api/vacancy', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        designation: designation,
+                        bps: bps,
+                        sanctioned_posts: newSanctioned
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    // Update DOM
+                    const updatedSanctioned = parseInt(newSanctioned);
+                    const vacant = updatedSanctioned - filled;
+
+                    document.getElementById(`sentioned-${rowIndex}`).innerText = updatedSanctioned;
+
+                    const vacantCell = document.getElementById(`vacant-${rowIndex}`);
+                    vacantCell.innerText = vacant;
+
+                    if (vacant < 0) {
+                        vacantCell.style.color = 'var(--danger)';
+                    } else if (vacant > 0) {
+                        vacantCell.style.color = 'var(--success)';
+                    } else {
+                        vacantCell.style.color = 'inherit';
+                    }
+
+                    Swal.fire({
+                        title: 'Saved!',
+                        text: 'Sentioned Posts updated successfully.',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+
+                    // Update the onclick handler so consecutive edits work without reload
+                    const btn = document.querySelector(`button[onclick="editSanctioned('${designation}', ${bps}, ${currentSanctioned}, ${filled}, ${rowIndex})"]`);
+                    if (btn) {
+                        btn.setAttribute('onclick', `editSanctioned('${designation}', ${bps}, ${updatedSanctioned}, ${filled}, ${rowIndex})`);
+                    }
+
+                    handleDesigSelectionChange();
+                } else {
+                    Swal.fire('Error', data.error || 'Failed to update', 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'An error occurred while saving.', 'error');
+            }
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        handleDesigSelectionChange();
+    });
+</script>
+{% endblock %}
